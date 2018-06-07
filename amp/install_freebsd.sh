@@ -54,7 +54,7 @@ install -m 644 -o root -g wheel php.conf ${APACHE}/Includes
 # setup data directory
 iocage exec ${JAIL} mkdir -p /srv/www/default
 iocage exec ${JAIL} chown -R www:www /srv/www
-install -m 644 -o www -g www default.php ${JAIL_ROOT}/srv/www/default/index.php
+install -m 644 -o www -g www default.php ${JAILROOT}/srv/www/default/index.php
 
 # start em up
 iocage exec ${JAIL} service apache24 start
