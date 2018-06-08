@@ -44,17 +44,26 @@ iocage exec ${JAIL} sysrc apache24_enable="YES"
 
 # configure
 JAILROOT=/mnt/iocage/jails/${JAIL}/root
-APACHE=${JAILROOT}/usr/local/etc/apache24
+APACHE=/usr/local/etc/apache24
 sed -i '' "s/example.com/${FQDN}/g" httpd.conf
-install -m 644 -o root -g wheel httpd.conf ${APACHE}
 sed -i '' "s/example.com/${FQDN}/g" vhosts.conf
-install -m 644 -o root -g wheel vhosts.conf ${APACHE}/Includes
-install -m 644 -o root -g wheel php.conf ${APACHE}/Includes
+install -m 644 -o root -g wheel httpd.conf ${JAILROOT}/${APACHE}
+install -m 644 -o root -g wheel vhosts.conf ${JAILROOT}/${APACHE}/Includes
+install -m 644 -o root -g wheel php.conf ${JAILROOT}/${APACHE}/Includes
 
 # setup data directory
-iocage exec ${JAIL} mkdir -p /srv/www/default
+iocage exec ${JAIL} mkdir -p /srv/www/${FQDN}
 iocage exec ${JAIL} chown -R www:www /srv/www
-install -m 644 -o www -g www default.php ${JAILROOT}/srv/www/default/index.php
+install -m 644 -o www -g www default.php ${JAILROOT}/srv/www/${FQDN}/index.php
+
+# generate self signed cert
+SUBJ="/C=US/ST=New York/L=New York/O=The Ether/CN=${FQDN}"
+KEYOUT=${APACHE}/ssl/${FQDN}.key
+CRTOUT=${APACHE}/ssl/${FQDN}.crt
+iocage exec ${JAIL} mkdir -m 700 ${APACHE}/ssl
+iocage exec ${JAIL} openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}
+iocage exec ${JAIL} chown www:www ${APACHE}/ssl
+iocage exec ${JAIL} chmod 400 ${KEYOUT} ${CRTOUT}
 
 # start em up
 iocage exec ${JAIL} service apache24 start
