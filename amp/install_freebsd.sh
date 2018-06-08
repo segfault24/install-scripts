@@ -57,12 +57,11 @@ iocage exec ${JAIL} chown -R www:www /srv/www
 install -m 644 -o www -g www default.php ${JAILROOT}/srv/www/${FQDN}/index.php
 
 # generate self signed cert
-SUBJ="/C=US/ST=New York/L=New York/O=The Ether/CN=${FQDN}"
+SUBJ="/C=US/ST=New\ York/L=New\ York/O=The\ Ether/CN=${FQDN}"
 KEYOUT=${APACHE}/ssl/${FQDN}.key
 CRTOUT=${APACHE}/ssl/${FQDN}.crt
 iocage exec ${JAIL} mkdir -m 700 ${APACHE}/ssl
-iocage exec ${JAIL} openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}
-iocage exec ${JAIL} chown www:www ${APACHE}/ssl
+iocage exec ${JAIL} "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}"
 iocage exec ${JAIL} chmod 400 ${KEYOUT} ${CRTOUT}
 
 # start em up
