@@ -1,30 +1,34 @@
 #!/bin/sh
-FQDN=myhost.lan
+FQDN=$(hostname --fqdn)
 IP=192.168.1.20
 GATEWAY=192.168.1.1
 
 exit 1
 
 if ! [ $(id -u) = 0 ]; then
-	echo "This script must be run with root privileges"
-	exit 1
+    echo "This script must be run with root privileges"
+    exit 1
 fi
 
-# create the jail with base applications
+DB_ROOT_PASSWORD=$(openssl rand -base64 16)
+
+# install base applications
 echo Creating jail "${JAIL}" at ${IP}...
 apt-get install apache2 mysql-server mysql-client php php-mysql php-curl php-pear
-a2enmod rewrite deflate
 
 # set to start on boot
 systemctl enable mysql
 systemctl enable apache2
 
-# configure
+# configure apache
 APACHE=/etc/apache2
-sed -i '' "s/example.com/${FQDN}/g" httpd.conf
-sed -i '' "s/example.com/${FQDN}/g" vhosts.conf
-install -m 644 -o root -g wheel httpd.conf ${APACHE}/apache2.conf
-install -m 644 -o root -g wheel vhosts.conf ${APACHE}/Includes/
+rm ${APACHE}/conf-enabled/*
+rm ${APACHE}/sites-enabled/*
+sed -i '' "s/example.com/${FQDN}/g" httpd-debian.conf
+sed -i '' "s/example.com/${FQDN}/g" default-site.conf
+sed -i '' "s/APACHEDIR/${APACHE}/g" default-site.conf
+install -m 644 -o root -g wheel httpd-debian.conf ${APACHE}/apache2.conf
+install -m 644 -o root -g wheel default-site.conf ${APACHE}/sites-enabled
 
 # setup data directory
 mkdir -p /srv/www/${FQDN}
@@ -39,7 +43,21 @@ mkdir -m 700 ${APACHE}/ssl
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}
 chmod 400 ${KEYOUT} ${CRTOUT}
 
-# start em up
+# start up apache
 systemctl start apache2
+
+# secure mysql installation
+mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root';"
+mysql -u root -e "DELETE FROM mysql.user WHERE User='';"
+mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+mysql -u root -e "DROP DATABASE IF EXISTS test;"
+mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+mysqladmin reload
+
+# start up mysql
 systemctl start mysql
+
+# save the db password(s)
+echo ${DB_ROOT_PASSWORD} > /root/db_passwords.txt
+echo See /root/db_passwords.txt for DB credentials
 
