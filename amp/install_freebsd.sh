@@ -1,7 +1,7 @@
 #!/bin/sh
 JAIL=myjail
 FQDN=myjail.lan
-IP=192.168.1.20
+IP=192.168.1.30
 GATEWAY=192.168.1.1
 
 if ! [ $(id -u) = 0 ]; then
