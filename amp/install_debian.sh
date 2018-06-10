@@ -26,7 +26,8 @@ rm ${APACHE}/conf-enabled/*
 rm ${APACHE}/sites-enabled/*
 sed -i '' "s/example.com/${FQDN}/g" httpd-debian.conf
 sed -i '' "s/example.com/${FQDN}/g" default-site.conf
-sed -i '' "s/APACHEDIR/${APACHE}/g" default-site.conf
+TEMP=$(echo ${APACHE} | sed "s/\//\\\\\//g")
+sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf
 install -m 644 -o root -g wheel httpd-debian.conf ${APACHE}/apache2.conf
 install -m 644 -o root -g wheel default-site.conf ${APACHE}/sites-enabled
 
@@ -43,8 +44,9 @@ mkdir -m 700 ${APACHE}/ssl
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}
 chmod 400 ${KEYOUT} ${CRTOUT}
 
-# start up apache
+# start up services
 systemctl start apache2
+systemctl start mysql
 
 # secure mysql installation
 mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root';"
@@ -53,9 +55,6 @@ mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('loc
 mysql -u root -e "DROP DATABASE IF EXISTS test;"
 mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
 mysqladmin reload
-
-# start up mysql
-systemctl start mysql
 
 # save the db password(s)
 echo ${DB_ROOT_PASSWORD} > /root/db_passwords.txt

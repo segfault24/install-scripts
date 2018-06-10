@@ -51,7 +51,10 @@ iocage exec ${JAIL} mkdir -m 755 ${APACHE}/conf-enabled
 iocage exec ${JAIL} mkdir -m 755 ${APACHE}/sites-enabled
 sed -i '' "s/example.com/${FQDN}/g" httpd-freebsd.conf
 sed -i '' "s/example.com/${FQDN}/g" default-site.conf
-sed -i '' "s/APACHEDIR/${APACHE}/g" default-site.conf
+TEMP=$(echo ${APACHE} | sed "s/\//\\\\\//g")
+sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf
+iocage exec ${JAIL} mv ${APACHE}/Includes/* ${APACHE}/conf-enabled
+iocage exec ${JAIL} rmdir ${APACHE}/Includes
 install -m 644 -o root -g wheel httpd-freebsd.conf ${JAILROOT}/${APACHE}/httpd.conf
 install -m 644 -o root -g wheel php.conf ${JAILROOT}/${APACHE}/conf-enabled
 install -m 644 -o root -g wheel default-site.conf ${JAILROOT}/${APACHE}/sites-enabled
@@ -69,8 +72,9 @@ iocage exec ${JAIL} mkdir -m 700 ${APACHE}/ssl
 iocage exec ${JAIL} "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}"
 iocage exec ${JAIL} chmod 400 ${KEYOUT} ${CRTOUT}
 
-# start up apache
+# start up services
 iocage exec ${JAIL} service apache24 start
+iocage exec ${JAIL} service mysql-server start
 
 # secure mysql installation
 iocage exec ${JAIL} mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root';"
@@ -78,10 +82,7 @@ iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.user WHERE User='';"
 iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
 iocage exec ${JAIL} mysql -u root -e "DROP DATABASE IF EXISTS test;"
 iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
-mysqladmin reload
-
-# start up mysql
-iocage exec ${JAIL} service mysql-server start
+iocage exec ${JAIL} mysqladmin reload
 
 # save the db password(s)
 iocage exec ${JAIL} echo ${DB_ROOT_PASSWORD} > /root/db_passwords.txt
