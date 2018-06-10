@@ -1,8 +1,10 @@
 #!/bin/sh
 JAIL=myjail
 FQDN=myjail.lan
-IP=192.168.1.30
+INTERFACE=bridge1
+IP=192.168.1.30/24
 GATEWAY=192.168.1.1
+VNET=off
 
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
@@ -21,7 +23,7 @@ cat <<__EOF__ >/tmp/pkg.json
     ]
 }
 __EOF__
-iocage create --name "${JAIL}" -r 11.1-RELEASE -p /tmp/pkg.json ip4_addr="${IP}" defaultrouter="${GATEWAY}" boot="on" host_hostname="${JAIL}" vnet="on"
+iocage create --name "${JAIL}" -r 11.1-RELEASE -p /tmp/pkg.json ip4_addr="${INTERFACE}|${IP}" defaultrouter="${GATEWAY}" boot="on" host_hostname="${JAIL}" vnet="${VNET}"
 rm /tmp/pkg.json
 
 # build the rest from ports
