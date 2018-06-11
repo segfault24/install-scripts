@@ -80,14 +80,22 @@ iocage exec ${JAIL} service apache24 start
 iocage exec ${JAIL} service mysql-server start
 
 # secure mysql installation
-iocage exec ${JAIL} mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root';"
-iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.user WHERE User='';"
-iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-iocage exec ${JAIL} mysql -u root -e "DROP DATABASE IF EXISTS test;"
-iocage exec ${JAIL} mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+TMP_DB_ROOT_PW=$(grep -v \# /root/.mysql_secret)
+echo [mysql] > ${JAILROOT}/root/.my.cnf
+echo user=root >> ${JAILROOT}/root/.my.cnf
+echo password=${TMP_DB_ROOT_PW} >> ${JAILROOT}/root/.my.cnf
+iocage exec ${JAIL} mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}'";
+iocage exec ${JAIL} mysql -e "DELETE FROM mysql.user WHERE User='';"
+iocage exec ${JAIL} mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+iocage exec ${JAIL} mysql -e "DROP DATABASE IF EXISTS test;"
+iocage exec ${JAIL} mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
 iocage exec ${JAIL} mysqladmin reload
 
 # save the db password(s)
-iocage exec ${JAIL} echo ${DB_ROOT_PASSWORD} > /root/db_passwords.txt
-echo See /root/db_passwords.txt for DB credentials
+echo [mysql] > ${JAILROOT}/root/.my.cnf
+echo user=root >> ${JAILROOT}/root/.my.cnf
+echo password=${DB_ROOT_PASSWORD} >> ${JAILROOT}/root/.my.cnf
+iocage exec ${JAIL} chmod 400 /root/.my.cnf
+iocage exec ${JAIL} rm /root/.mysql_secret
+echo See /root/.my.cnf for root password to mysql
 
