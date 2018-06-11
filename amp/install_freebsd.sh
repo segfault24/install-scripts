@@ -18,8 +18,11 @@ echo Creating jail "${JAIL}" at ${IP}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","wget","curl","sudo",
-        "apache24","mysql57-server","php56","mod_php56","php56-mysql","php56-mysqli"
+        "nano","bash","wget","curl","sudo","apache24","mod_php72","mysql57-server",
+        "php72","php72-ctype","php72-curl","php72-dom","php72-filter","php72-hash",
+        "php72-iconv","php72-json","php72-mbstring","php72-mysqli","php72-openssl",
+        "php72-pdo","php72-pdo_mysql","php72-phar","php72-session","php72-tokenizer",
+        "php72-xmlwriter","php72-zlib"
     ]
 }
 __EOF__
@@ -27,20 +30,20 @@ iocage create --name "${JAIL}" -r 11.1-RELEASE -p /tmp/pkg.json ip4_addr="${INTE
 rm /tmp/pkg.json
 
 # build the rest from ports
-echo Building additional packages from ports...
-make_port()
-{
-    for var in "$@"
-    do
-        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-    done
-}
-iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-make_port databases/php56-pdo databases/php56-pdo_mysql
-make_port www/php56-session devel/php56-json devel/phpunit devel/php56-tokenizer
-make_port ftp/php56-curl archivers/php56-phar archivers/php56-zlib security/php56-hash
-make_port security/php56-filter security/php56-openssl converters/php56-iconv converters/php56-mbstring
-make_port textproc/php56-dom textproc/php56-ctype security/py-certbot
+#echo Building additional packages from ports...
+#make_port()
+#{
+#    for var in "$@"
+#    do
+#        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
+#    done
+#}
+#iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
+#make_port databases/php56-pdo databases/php56-pdo_mysql
+#make_port www/php56-session devel/php56-json devel/phpunit devel/php56-tokenizer
+#make_port ftp/php56-curl archivers/php56-phar archivers/php56-zlib security/php56-hash
+#make_port security/php56-filter security/php56-openssl converters/php56-iconv converters/php56-mbstring
+#make_port textproc/php56-dom textproc/php56-ctype security/py-certbot
 
 # set to start on boot
 iocage exec ${JAIL} sysrc mysql_enable="YES"
@@ -58,7 +61,6 @@ sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf
 iocage exec ${JAIL} mv ${APACHE}/Includes/* ${APACHE}/conf-enabled
 iocage exec ${JAIL} rmdir ${APACHE}/Includes
 install -m 644 -o root -g wheel httpd-freebsd.conf ${JAILROOT}/${APACHE}/httpd.conf
-install -m 644 -o root -g wheel php.conf ${JAILROOT}/${APACHE}/conf-enabled
 install -m 644 -o root -g wheel default-site.conf ${JAILROOT}/${APACHE}/sites-enabled
 
 # setup data directory
