@@ -39,11 +39,7 @@ rm /tmp/pkg.json
 #    done
 #}
 #iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-#make_port databases/php56-pdo databases/php56-pdo_mysql
-#make_port www/php56-session devel/php56-json devel/phpunit devel/php56-tokenizer
-#make_port ftp/php56-curl archivers/php56-phar archivers/php56-zlib security/php56-hash
-#make_port security/php56-filter security/php56-openssl converters/php56-iconv converters/php56-mbstring
-#make_port textproc/php56-dom textproc/php56-ctype security/py-certbot
+#make_port devel/php-composer
 
 # set to start on boot
 iocage exec ${JAIL} sysrc mysql_enable="YES"
@@ -54,14 +50,17 @@ JAILROOT=/mnt/iocage/jails/${JAIL}/root
 APACHE=/usr/local/etc/apache24
 iocage exec ${JAIL} mkdir -m 755 ${APACHE}/conf-enabled
 iocage exec ${JAIL} mkdir -m 755 ${APACHE}/sites-enabled
-sed -i '' "s/example.com/${FQDN}/g" httpd-freebsd.conf
-sed -i '' "s/example.com/${FQDN}/g" default-site.conf
+cp httpd-freebsd.conf httpd-freebsd.conf.tmp
+cp default-site.conf default-site.conf.tmp
+sed -i '' "s/example.com/${FQDN}/g" httpd-freebsd.conf.tmp
+sed -i '' "s/example.com/${FQDN}/g" default-site.conf.tmp
 TEMP=$(echo ${APACHE} | sed "s/\//\\\\\//g")
-sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf
+sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf.tmp
 iocage exec ${JAIL} mv ${APACHE}/Includes/* ${APACHE}/conf-enabled
 iocage exec ${JAIL} rmdir ${APACHE}/Includes
-install -m 644 -o root -g wheel httpd-freebsd.conf ${JAILROOT}/${APACHE}/httpd.conf
-install -m 644 -o root -g wheel default-site.conf ${JAILROOT}/${APACHE}/sites-enabled
+install -m 644 -o root -g wheel httpd-freebsd.conf.tmp ${JAILROOT}/${APACHE}/httpd.conf
+install -m 644 -o root -g wheel default-site.conf.tmp ${JAILROOT}/${APACHE}/sites-enabled/default-site.conf
+rm httpd-freebsd.conf.tmp default-site.conf.tmp
 
 # setup data directory
 iocage exec ${JAIL} mkdir -p /srv/www/${FQDN}
