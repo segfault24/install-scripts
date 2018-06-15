@@ -1,9 +1,5 @@
 #!/bin/sh
-FQDN=$(hostname --fqdn)
-IP=192.168.1.30
-GATEWAY=192.168.1.1
-
-exit 1
+FQDN=dev2.lan
 
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
@@ -13,50 +9,62 @@ fi
 DB_ROOT_PASSWORD=$(openssl rand -base64 16)
 
 # install base applications
-echo Creating jail "${JAIL}" at ${IP}...
-apt-get install apache2 mysql-server mysql-client php php-mysql php-curl php-pear
+echo Installing base applications...
+apt-get -y install apache2 mariadb-server mysql-client php php-mysql php-curl php-pear
 
 # set to start on boot
-systemctl enable mysql
 systemctl enable apache2
+systemctl enable mariadb
+systemctl stop apache2
+systemctl stop mariadb
 
 # configure apache
 APACHE=/etc/apache2
 rm ${APACHE}/conf-enabled/*
 rm ${APACHE}/sites-enabled/*
-sed -i '' "s/example.com/${FQDN}/g" httpd-debian.conf
-sed -i '' "s/example.com/${FQDN}/g" default-site.conf
+rm ${APACHE}/sites-available/*
+cp httpd-debian.conf httpd-debian.conf.tmp
+cp default-site.conf default-site.conf.tmp
+sed -i "s/example.com/${FQDN}/g" httpd-debian.conf.tmp
+sed -i "s/example.com/${FQDN}/g" default-site.conf.tmp
 TEMP=$(echo ${APACHE} | sed "s/\//\\\\\//g")
-sed -i '' "s/APACHEDIR/${TEMP}/g" default-site.conf
-install -m 644 -o root -g wheel httpd-debian.conf ${APACHE}/apache2.conf
-install -m 644 -o root -g wheel default-site.conf ${APACHE}/sites-enabled
+sed -i "s/APACHEDIR/${TEMP}/g" default-site.conf.tmp
+install -m 644 -o root -g root httpd-debian.conf.tmp ${APACHE}/apache2.conf
+install -m 644 -o root -g root default-site.conf.tmp ${APACHE}/sites-available/default-site.conf
+ln -s ${APACHE}/sites-enabled/default-site.conf ${APACHE}/sites-available/default-site.conf
+rm httpd-debian.conf.tmp default-site.conf.tmp
 
 # setup data directory
 mkdir -p /srv/www/${FQDN}
-chown -R www:www /srv/www
-install -m 644 -o www -g www default.php /srv/www/${FQDN}/index.php
+chown -R www-data:www-data /srv/www
+install -m 644 -o www-data -g www-data default.php /srv/www/${FQDN}/index.php
 
 # generate self signed cert
 SUBJ="/C=US/ST=New\ York/L=New\ York/O=The\ Ether/CN=${FQDN}"
 KEYOUT=${APACHE}/ssl/${FQDN}.key
 CRTOUT=${APACHE}/ssl/${FQDN}.crt
 mkdir -m 700 ${APACHE}/ssl
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}
+openssl req -newkey rsa:2048 -nodes -x509 -keyout "${KEYOUT}" -out "${CRTOUT}" -subj "${SUBJ}"
 chmod 400 ${KEYOUT} ${CRTOUT}
 
 # start up services
 systemctl start apache2
-systemctl start mysql
+systemctl start mariadb
+
+# set the root db pass and save it
+mysql -u root -e "USE mysql; UPDATE user SET password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root' AND Host='localhost'; FLUSH PRIVILEGES;"
+echo [mysql] > /root/.my.cnf
+echo password=${DB_ROOT_PASSWORD} >> /root/.my.cnf
+chmod 400 /root/.my.cnf
+echo see /root/.my.cnf for root password to mariadb
 
 # secure mysql installation
-mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${DB_ROOT_PASSWORD}') WHERE User='root';"
 mysql -u root -e "DELETE FROM mysql.user WHERE User='';"
 mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
 mysql -u root -e "DROP DATABASE IF EXISTS test;"
 mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
-mysqladmin reload
 
-# save the db password(s)
-echo ${DB_ROOT_PASSWORD} > /root/db_passwords.txt
-echo See /root/db_passwords.txt for DB credentials
+# restart everything to be sure
+systemctl restart apache2
+systemctl restart mariadb
 
