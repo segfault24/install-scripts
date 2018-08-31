@@ -14,6 +14,10 @@ DATADIR=/mnt/downloads
 # whitelist for client access
 WHITELIST='127.0.0.1,192.168.\*.\*'
 
+# pia vpn credentials
+VPNUSER=
+VPNPASS=
+
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
     exit 1
@@ -63,7 +67,7 @@ iocage exec ${JAIL} sysrc inet6_enable="NO"
 iocage exec ${JAIL} sysrc ip6addrctl_enable="NO"
 iocage exec ${JAIL} sysrc transmission_enable="YES"
 iocage exec ${JAIL} sysrc transmission_download_dir="${DATADIR}"
-iocage exec ${JAIL} sysrc openvpn_enable="YES"
+#iocage exec ${JAIL} sysrc openvpn_enable="YES"
 iocage exec ${JAIL} sysrc openvpn_configfile="${OPENVPN}/openvpn.conf"
 iocage exec ${JAIL} sysrc firewall_enable="YES"
 iocage exec ${JAIL} sysrc firewall_script="${IPFWSCRIPT}"
@@ -87,6 +91,22 @@ install -m 644 settings.json.tmp ${JAILROOT}/${TRANSMISSION}/settings.json
 iocage exec ${JAIL} chown transmission:transmission ${TRANSMISSION}/settings.json
 rm settings.json.tmp
 
+# configure openvpn
+iocage exec ${JAIL} mkdir -p ${OPENVPN}/pia
+iocage exec ${JAIL} wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip -O ${OPENVPN}/openvpn.zip
+iocage exec ${JAIL} unzip ${OPENVPN}/openvpn.zip -d ${OPENVPN}/pia
+iocage exec ${JAIL} cp ${OPENVPN}/pia/US\ East.ovpn ${OPENVPN}/openvpn.conf
+TEMP=$(echo ${OPENVPN} | sed "s/\//\\\\\//g")
+iocage exec ${JAIL} sed -i '' "s/auth-user-pass/auth-user-pass ${TEMP}\\/pass.txt/g" ${OPENVPN}/openvpn.conf
+iocage exec ${JAIL} sed -i '' "s/ca ca.rsa.2048.crt/ca ${TEMP}\\/ca.rsa.2048.crt/g" ${OPENVPN}/openvpn.conf
+iocage exec ${JAIL} sed -i '' "s/crl-verify crl.rsa.2048.pem/crl-verify ${TEMP}\\/crl.rsa.2048.pem/g" ${OPENVPN}/openvpn.conf
+iocage exec ${JAIL} "echo keepalive 10 60 >> ${OPENVPN}/openvpn.conf"
+iocage exec ${JAIL} cp ${OPENVPN}/pia/ca.rsa.2048.crt ${OPENVPN}
+iocage exec ${JAIL} cp ${OPENVPN}/pia/crl.rsa.2048.pem ${OPENVPN}
+iocage exec ${JAIL} "echo ${VPNUSER} > ${OPENVPN}/pass.txt"
+iocage exec ${JAIL} "echo ${VPNPASS} >> ${OPENVPN}/pass.txt"
+iocage exec ${JAIL} chmod 400 ${OPENVPN}/openvpn.conf
+
 # start up services
 #iocage exec ${JAIL} service openvpn start
 iocage exec ${JAIL} service transmission start
@@ -97,6 +117,11 @@ iocage exec ${JAIL} chmod 400 /root/transmission.password
 echo \!\!\!\!\!\!\!\!\!\!
 echo \!\!\!\!\!\!\!\!\!\!
 echo See /root/transmission.password within the jail for the transmission password
+echo \!\!\!\!\!\!\!\!\!\!
+echo \!\!\!\!\!\!\!\!\!\!
+echo Consider settings the following sysctl tunables on the host
+echo "  kern.ipc.maxsockbuf = 5242880"
+echo "  net.inet.udp.recvspace = 4194304"
 echo \!\!\!\!\!\!\!\!\!\!
 echo \!\!\!\!\!\!\!\!\!\!
 
