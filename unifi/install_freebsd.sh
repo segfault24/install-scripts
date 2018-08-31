@@ -2,7 +2,8 @@
 JAIL=unifi
 FQDN=unifi.lan
 INTERFACE=bridge0
-IP=192.168.1.32/24
+IP=192.168.1.32
+MASK=24
 GATEWAY=192.168.1.1
 VNET=off
 
@@ -12,15 +13,24 @@ if ! [ $(id -u) = 0 ]; then
 fi
 
 # create the jail with base applications
-echo Creating jail "${JAIL}" at ${IP}...
+echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","llvm40","openjdk8"
+        "nano","bash","llvm40","openjdk8","snappyjava","mongodb34"
     ]
 }
 __EOF__
-iocage create --name "${JAIL}" -r 11.1-RELEASE -p /tmp/pkg.json ip4_addr="${INTERFACE}|${IP}" defaultrouter="${GATEWAY}" boot="on" host_hostname="${JAIL}" vnet="${VNET}"
+iocage create \
+    --name "${JAIL}" \
+    -r 11.1-RELEASE \
+    -p /tmp/pkg.json \
+    host_hostname="${JAIL}" \
+    vnet="${VNET}" \
+    ip4_addr="${INTERFACE}|${IP}/${MASK}" \
+    defaultrouter="${GATEWAY}" \
+    boot="on"
+
 rm /tmp/pkg.json
 
 # build the rest from ports
