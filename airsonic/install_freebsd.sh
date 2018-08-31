@@ -7,7 +7,8 @@ MASK=24
 GATEWAY=192.168.1.1
 VNET=off
 
-DATASET=/mnt/mypool/media
+DATASET=/mnt/mypool/media/Music
+DATADIR=/mnt/music
 
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
@@ -80,7 +81,7 @@ iocage exec ${JAIL} wget ${WAR_URL} -O ${TOMCAT}/webapps/airsonic.war
 iocage exec ${JAIL} chown www:www ${TOMCAT}/webapps/airsonic.war
 
 # map storage
-iocage fstab -a ${JAIL} ${DATASET} /mnt/media nullfs ro 0 0
+iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ro 0 0
 
 # start up services
 #iocage exec ${JAIL} service tomcat8 start
