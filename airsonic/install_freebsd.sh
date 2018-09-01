@@ -22,12 +22,13 @@ echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","wget","ca_root_nss","tomcat8"
+        "nano","bash","wget","ca_root_nss","tomcat8",
+        "nasm","binutils","texi2html","frei0r","gmake","pkgconf",
+        "perl5-5.26.2","gnutls","freetype2","fontconfig","gmp","ninja",
+        "cmake","automake","autoconf","libtool","libiconv","xorg-macros"
     ]
 }
 __EOF__
-# one day i'll build ffmpeg...
-# "nasm","binutils","texi2html","frei0r","gmake","pkgconf","perl5-5.26.2"
 iocage create \
     --name "${JAIL}" \
     -r 11.1-RELEASE \
@@ -41,17 +42,17 @@ iocage create \
 rm /tmp/pkg.json
 
 # build the rest from ports
-#echo Building additional packages from ports...
-#make_port()
-#{
-#    for var in "$@"
-#    do
-#        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-#    done
-#}
-#iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-#pushd /usr/ports/multimedia/ffmpeg && make config && popd
-#make_port multimedia/ffmpeg
+echo Building additional packages from ports...
+make_port()
+{
+    for var in "$@"
+    do
+        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
+    done
+}
+iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
+iocage exec ${JAIL} "make config -C /usr/ports/multimedia/ffmpeg"
+make_port multimedia/ffmpeg
 
 # set to start on boot
 iocage exec ${JAIL} sysrc tomcat8_enable="YES"
@@ -73,7 +74,7 @@ iocage exec ${JAIL} rm -rf ${TOMCAT}/webapps/host-manager
 # setup airsonic directory
 iocage exec ${JAIL} mkdir -m 755 -p /var/airsonic/transcode
 iocage exec ${JAIL} chown -R www:www /var/airsonic
-#iocage exec ${JAIL} ln -s /usr/local/bin/ffmpeg /var/airsonic/transcode/ffmpeg
+iocage exec ${JAIL} ln -s /usr/local/bin/ffmpeg /var/airsonic/transcode/ffmpeg
 
 # install airsonic
 WAR_URL=https://github.com/airsonic/airsonic/releases/download/v10.1.2/airsonic.war
@@ -82,12 +83,6 @@ iocage exec ${JAIL} chown www:www ${TOMCAT}/webapps/airsonic.war
 
 # map storage
 iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ro 0 0
-
-# start up services
-#iocage exec ${JAIL} service tomcat8 start
-
-# deploy airsonic
-#iocage exec ${JAIL} wget -O - -q http://admin:${PASS}@${IP}:8080/manager/text/deploy?path=/airsonic&war=file:/${TOMCAT}/webapps/airsonic.war
 
 # save admin password
 echo username=admin > ${JAILROOT}/root/tomcat.password
@@ -102,5 +97,5 @@ echo Go to http://${IP}:8080/airsonic and change the Airsonic admin password
 echo \!\!\!\!\!\!\!\!\!\!
 echo \!\!\!\!\!\!\!\!\!\!
 
-# restart the whole jail to restart everything
+# restart jail to start tomcat and deploy airsonic
 iocage restart ${JAIL}
