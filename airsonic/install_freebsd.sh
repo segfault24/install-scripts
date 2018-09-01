@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+source ../utils/utils.sh
+
 JAIL=airsonic
 FQDN=airsonic.lan
 INTERFACE=bridge0
@@ -10,12 +12,10 @@ VNET=off
 DATASET=/mnt/mypool/media/Music
 DATADIR=/mnt/music
 
-if ! [ $(id -u) = 0 ]; then
-    echo "This script must be run with root privileges"
-    exit 1
-fi
+require_root
+check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET DATASET DATADIR
 
-PASS=$(openssl rand -base64 24 | grep -o '[[:alnum:]]' | tr -d '\n')
+PASS=$(gen_passwd)
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -38,20 +38,15 @@ iocage create \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
     boot="on"
-
+if [[ $? -ne 0 ]]; then
+    echo "Failed to create jail ${JAIL}"
+    exit 1
+fi
 rm /tmp/pkg.json
 
 # build the rest from ports
-echo Building additional packages from ports...
-make_port()
-{
-    for var in "$@"
-    do
-        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-    done
-}
-iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-iocage exec ${JAIL} "make config -C /usr/ports/multimedia/ffmpeg"
+init_ports
+config_port multimedia/ffmpeg
 make_port multimedia/ffmpeg
 
 # set to start on boot
