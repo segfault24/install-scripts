@@ -1,5 +1,11 @@
 #!/bin/sh
-FQDN=dev2.lan
+FQDN=
+
+if [ -z ${FQDN} ]; then
+    echo The Fully Qualified Domain Name \(FQDN\) of the default website must
+    echo be filled in at the top of this script \(ex. www.mywebsite.com\)
+    exit 1
+fi
 
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
@@ -31,7 +37,7 @@ TEMP=$(echo ${APACHE} | sed "s/\//\\\\\//g")
 sed -i "s/APACHEDIR/${TEMP}/g" default-site.conf.tmp
 install -m 644 -o root -g root httpd-debian.conf.tmp ${APACHE}/apache2.conf
 install -m 644 -o root -g root default-site.conf.tmp ${APACHE}/sites-available/default-site.conf
-ln -s ${APACHE}/sites-enabled/default-site.conf ${APACHE}/sites-available/default-site.conf
+a2ensite default-site
 rm httpd-debian.conf.tmp default-site.conf.tmp
 
 # setup data directory

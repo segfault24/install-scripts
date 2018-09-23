@@ -1,10 +1,21 @@
 #!/bin/sh
-JAIL=myjail
-FQDN=myjail.lan
-INTERFACE=bridge1
+JAIL=
+FQDN=
+INTERFACE=bridge0
 IP=192.168.1.30/24
 GATEWAY=192.168.1.1
 VNET=off
+
+if [ -z ${JAIL} ]; then
+    echo The name of the jail to be created must be filled in at the top of this script
+    exit 1
+fi
+
+if [ -z ${FQDN} ]; then
+    echo The Fully Qualified Domain Name \(FQDN\) of the default website must
+    echo be filled in at the top of this script \(ex. www.mywebsite.com\)
+    exit 1
+fi
 
 if ! [ $(id -u) = 0 ]; then
     echo "This script must be run with root privileges"
@@ -26,7 +37,19 @@ cat <<__EOF__ >/tmp/pkg.json
     ]
 }
 __EOF__
-iocage create --name "${JAIL}" -r 11.1-RELEASE -p /tmp/pkg.json ip4_addr="${INTERFACE}|${IP}" defaultrouter="${GATEWAY}" boot="on" host_hostname="${JAIL}" vnet="${VNET}"
+iocage create \
+    --name "${JAIL}" \
+    -r 11.1-RELEASE \
+    -p /tmp/pkg.json \
+    host_hostname="${JAIL}" \
+    vnet="${VNET}" \
+    ip4_addr="${INTERFACE}|${IP}" \
+    defaultrouter="${GATEWAY}" \
+    boot="on"
+if [[ $? -ne 0 ]]; then
+    echo "Failed to create jail ${JAIL}"
+    exit 1
+fi
 rm /tmp/pkg.json
 
 # build the rest from ports
