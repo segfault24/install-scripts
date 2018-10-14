@@ -44,7 +44,7 @@
     "rpc-authentication-required": false,
     "rpc-bind-address": "BINDADDRESS",
     "rpc-enabled": true,
-    "rpc-host-whitelist": "",
+    "rpc-host-whitelist": "RPCHOSTWL",
     "rpc-host-whitelist-enabled": true,
     "rpc-password": "RPCPASSWORD",
     "rpc-port": 9091,

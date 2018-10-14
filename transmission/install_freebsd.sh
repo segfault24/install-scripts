@@ -30,13 +30,13 @@ echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","wget","ca_root_nss","openvpn","transmission-daemon"
+        "nano","bash","wget","ca_root_nss","openvpn","transmission-daemon","transmission-web"
     ]
 }
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.1-RELEASE \
+    -r 11.2-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
@@ -86,6 +86,7 @@ sed -i '' "s/BINDADDRESS/${IP}/g" settings.json.tmp
 TEMP=$(echo ${DATADIR} | sed "s/\//\\\\\//g")
 sed -i '' "s/DATADIR/${TEMP}/g" settings.json.tmp
 sed -i '' "s/RPCPASSWORD/${RPCPASS}/g" settings.json.tmp
+sed -i '' "s/RPCHOSTWL/${FQDN}/g" settings.json.tmp
 sed -i '' "s/WHITELIST/${WHITELIST}/g" settings.json.tmp
 install -m 644 settings.json.tmp ${JAILROOT}/${TRANSMISSION}/settings.json
 iocage exec ${JAIL} chown transmission:transmission ${TRANSMISSION}/settings.json
