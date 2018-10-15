@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Flush out the list before we begin
+ipfw -q -f flush
+
+# Set rules command prefix
+cmd="ipfw -q add"
+vpn="tun0"
+
+# Allow existing connections
+$cmd 00001 check-state
+
+# Allow all local traffic on the loopback interface
+$cmd 00010 allow all from any to any via lo0
+
+# Allow any connection to/from VPN interface
+$cmd 00020 allow all from any to any via $vpn
+
+# Allow connection to/from LAN (ICMP/DNS/HTTP interface)
+$cmd 00030 allow icmp from any to any
+$cmd 00031 allow udp from me to 192.168.0.0/16 53 out keep-state
+$cmd 00032 allow tcp from me to 192.168.0.0/16 53 out keep-state
+$cmd 00033 allow tcp from 192.168.0.0/16 to me 9091 in keep-state
+
+# Deny any Transmission connection outside LAN that does not use VPN
+$cmd 00040 deny all from any to any uid transmission
+
+# Default deny
+$cmd 00050 deny all from any to any

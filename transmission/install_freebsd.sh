@@ -42,7 +42,7 @@ iocage create \
     vnet="${VNET}" \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
-    boot="on"
+    boot="off"
 
 rm /tmp/pkg.json
 
@@ -59,7 +59,7 @@ rm /tmp/pkg.json
 #make_port devel/php-composer
 
 TRANSMISSION=/usr/local/etc/transmission/home
-OPENVPN=/usr/local/etc/openvpn/
+OPENVPN=/usr/local/etc/openvpn
 IPFWSCRIPT=/usr/local/etc/ipfw.rules
 
 # set sysrc settings
@@ -67,8 +67,9 @@ iocage exec ${JAIL} sysrc inet6_enable="NO"
 iocage exec ${JAIL} sysrc ip6addrctl_enable="NO"
 iocage exec ${JAIL} sysrc transmission_enable="YES"
 iocage exec ${JAIL} sysrc transmission_download_dir="${DATADIR}"
-#iocage exec ${JAIL} sysrc openvpn_enable="YES"
+iocage exec ${JAIL} sysrc openvpn_enable="YES"
 iocage exec ${JAIL} sysrc openvpn_configfile="${OPENVPN}/openvpn.conf"
+iocage exec ${JAIL} sysrc openvpn_if="tun"
 iocage exec ${JAIL} sysrc firewall_enable="YES"
 iocage exec ${JAIL} sysrc firewall_script="${IPFWSCRIPT}"
 
@@ -108,9 +109,15 @@ iocage exec ${JAIL} "echo ${VPNUSER} > ${OPENVPN}/pass.txt"
 iocage exec ${JAIL} "echo ${VPNPASS} >> ${OPENVPN}/pass.txt"
 iocage exec ${JAIL} chmod 400 ${OPENVPN}/openvpn.conf
 
+# configure ipfw
+install -m 750 -o root -g wheel ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
+
+# copy helper script
+install -m 750 -o root -g wheel test_vpn.sh ${JAILROOT}/root
+
 # start up services
 #iocage exec ${JAIL} service openvpn start
-iocage exec ${JAIL} service transmission start
+#iocage exec ${JAIL} service transmission start
 
 # set the rpc password
 echo rpcpassword=${RPCPASS} > ${JAILROOT}/root/transmission.password
@@ -127,5 +134,5 @@ echo \!\!\!\!\!\!\!\!\!\!
 echo \!\!\!\!\!\!\!\!\!\!
 
 # restart the whole jail to restart everything
-iocage restart ${JAIL}
-
+#iocage restart ${JAIL}
+iocage stop ${JAIL}
