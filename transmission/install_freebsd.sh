@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+source ../common/utils.sh
+
 JAIL=transmission
 FQDN=transmission.lan
 INTERFACE=vnet0
@@ -18,12 +20,11 @@ WHITELIST='127.0.0.1,192.168.\*.\*'
 VPNUSER=
 VPNPASS=
 
-if ! [ $(id -u) = 0 ]; then
-    echo "This script must be run with root privileges"
-    exit 1
-fi
+require_root
+check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
+check_blank DATASET DATADIR WHITELIST VPNUSER VPNPASS
 
-RPCPASS=$(openssl rand -base64 24 | grep -o '[[:alnum:]]' | tr -d '\n')
+RPCPASS=$(gen_passwd)
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -42,21 +43,16 @@ iocage create \
     vnet="${VNET}" \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
-    boot="off"
-
+    boot="off" \
+    allow_tun=1
+if [[ $? -ne 0 ]]; then
+    echo "Failed to create jail ${JAIL}"
+    exit 1
+fi
 rm /tmp/pkg.json
 
 # build the rest from ports
-#echo Building additional packages from ports...
-#make_port()
-#{
-#    for var in "$@"
-#    do
-#        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-#    done
-#}
-#iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-#make_port devel/php-composer
+#init_ports
 
 TRANSMISSION=/usr/local/etc/transmission/home
 OPENVPN=/usr/local/etc/openvpn
@@ -110,7 +106,7 @@ iocage exec ${JAIL} "echo ${VPNPASS} >> ${OPENVPN}/pass.txt"
 iocage exec ${JAIL} chmod 400 ${OPENVPN}/openvpn.conf
 
 # configure ipfw
-install -m 750 -o root -g wheel ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
+install -m 750 -o root -g wheel ../common/ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
 
 # copy helper script
 install -m 750 -o root -g wheel test_vpn.sh ${JAILROOT}/root
@@ -118,6 +114,7 @@ install -m 750 -o root -g wheel test_vpn.sh ${JAILROOT}/root
 # start up services
 #iocage exec ${JAIL} service openvpn start
 #iocage exec ${JAIL} service transmission start
+#iocage exec ${JAIL} service ipfw start
 
 # set the rpc password
 echo rpcpassword=${RPCPASS} > ${JAILROOT}/root/transmission.password

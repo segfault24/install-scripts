@@ -1,31 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 JAIL=
 FQDN=
 INTERFACE=bridge0
-IP=192.168.1.30/24
+IP=192.168.1.30
+MASK=24
 GATEWAY=192.168.1.1
 VNET=off
 
-if [ -z ${JAIL} ]; then
-    echo The name of the jail to be created must be filled in at the top of this script
-    exit 1
-fi
+require_root
+check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
 
-if [ -z ${FQDN} ]; then
-    echo The Fully Qualified Domain Name \(FQDN\) of the default website must
-    echo be filled in at the top of this script \(ex. www.mywebsite.com\)
-    exit 1
-fi
-
-if ! [ $(id -u) = 0 ]; then
-    echo "This script must be run with root privileges"
-    exit 1
-fi
-
-DB_ROOT_PASSWORD=$(openssl rand -base64 16)
+DB_ROOT_PASSWORD=$(gen_passwd)
 
 # create the jail with base applications
-echo Creating jail "${JAIL}" at ${IP}...
+echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
@@ -39,11 +27,11 @@ cat <<__EOF__ >/tmp/pkg.json
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.1-RELEASE \
+    -r 11.2-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
-    ip4_addr="${INTERFACE}|${IP}" \
+    ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
     boot="on"
 if [[ $? -ne 0 ]]; then
@@ -53,16 +41,7 @@ fi
 rm /tmp/pkg.json
 
 # build the rest from ports
-#echo Building additional packages from ports...
-#make_port()
-#{
-#    for var in "$@"
-#    do
-#        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-#    done
-#}
-#iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
-#make_port devel/php-composer
+#init_ports
 
 # set to start on boot
 iocage exec ${JAIL} sysrc mysql_enable="YES"

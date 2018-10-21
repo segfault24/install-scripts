@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../utils/utils.sh
+source ../common/utils.sh
 
 JAIL=unifi
 FQDN=unifi.lan

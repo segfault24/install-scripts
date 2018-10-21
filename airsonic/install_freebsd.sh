@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../utils/utils.sh
+source ../common/utils.sh
 
 JAIL=airsonic
 FQDN=airsonic.lan
@@ -31,7 +31,7 @@ cat <<__EOF__ >/tmp/pkg.json
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.1-RELEASE \
+    -r 11.2-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
