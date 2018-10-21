@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+source ../utils/utils.sh
+
 JAIL=unifi
 FQDN=unifi.lan
 INTERFACE=bridge0
@@ -7,10 +9,8 @@ MASK=24
 GATEWAY=192.168.1.1
 VNET=off
 
-if ! [ $(id -u) = 0 ]; then
-    echo "This script must be run with root privileges"
-    exit 1
-fi
+require_root
+check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -23,26 +23,22 @@ cat <<__EOF__ >/tmp/pkg.json
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.1-RELEASE \
+    -r 11.2-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
     boot="on"
-
+if [[ $? -ne 0 ]]; then
+    echo "Failed to create jail ${JAIL}"
+    exit 1
+fi
 rm /tmp/pkg.json
 
 # build the rest from ports
-echo Building additional packages from ports...
-make_port()
-{
-    for var in "$@"
-    do
-        iocage exec ${JAIL} make -C /usr/ports/$var install clean BATCH=yes
-    done
-}
-iocage exec ${JAIL} "if [ -z /usr/ports ]; then portsnap fetch extract; else portsnap auto; fi"
+init_ports
+make_port ports-mgmt/portmaster
 make_port net-mgmt/unifi5
 
 # set to start on boot
