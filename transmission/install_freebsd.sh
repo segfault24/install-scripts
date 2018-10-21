@@ -103,6 +103,7 @@ iocage exec ${JAIL} cp ${OPENVPN}/pia/ca.rsa.2048.crt ${OPENVPN}
 iocage exec ${JAIL} cp ${OPENVPN}/pia/crl.rsa.2048.pem ${OPENVPN}
 iocage exec ${JAIL} "echo ${VPNUSER} > ${OPENVPN}/pass.txt"
 iocage exec ${JAIL} "echo ${VPNPASS} >> ${OPENVPN}/pass.txt"
+iocage exec ${JAIL} chmod 400 ${OPENVPN}/pass.txt
 iocage exec ${JAIL} chmod 400 ${OPENVPN}/openvpn.conf
 
 # configure ipfw
