@@ -4,7 +4,7 @@ source ../common/utils.sh
 JAIL=emby
 FQDN=emby.lan
 INTERFACE=bridge0
-IP=192.168.1.29
+IP=
 MASK=24
 GATEWAY=192.168.1.1
 VNET=off
@@ -13,7 +13,8 @@ DATASET=/mnt/mypool/media
 DATADIR=/mnt/media
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET DATASET DATADIR
+check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
+check_blank DATASET DATADIR
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...

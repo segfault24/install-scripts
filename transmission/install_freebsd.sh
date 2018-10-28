@@ -4,7 +4,7 @@ source ../common/utils.sh
 JAIL=transmission
 FQDN=transmission.lan
 INTERFACE=vnet0
-IP=192.168.1.24
+IP=
 MASK=24
 GATEWAY=192.168.1.1
 VNET=on
@@ -44,7 +44,7 @@ iocage create \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
     boot="off" \
-    allow_tun=1
+    allow_tun="1"
 if [[ $? -ne 0 ]]; then
     echo "Failed to create jail ${JAIL}"
     exit 1

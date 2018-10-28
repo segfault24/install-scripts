@@ -1,73 +1,71 @@
-#!/bin/bash
+#!/bin/sh
 
-LOCAL=192.168.0.0/16
-DNS=192.168.1.25
-PIF=em0
-VPN=tun0
+pif=em0
+local=192.168.0.0/16
+dns=
 
-FREENAS=192.168.1.20
-UNIFI=192.168.1.32
-TRANSMISSION=192.168.1.24
-EMBY=192.168.1.29
-AIRSONIC=192.168.1.27
+freenas=
+unifi=
+transmission=
+emby=
+airsonic=
+nextcloud=
 
 # Flush the current ruleset
 ipfw -q -f flush
-CMD="ipfw -q add"
+cmd="ipfw -q add"
 
-${CMD} 00001 check-state
-${CMD} 00002 deny ip6 from any to any
+$cmd 00001 check-state
+$cmd 00002 deny ip6 from any to any
 
-#### Loopback & Internal Interfaces ####
-${CMD} 00020 allow all from any to any via lo0
-${CMD} 00030 allow all from any to any via bridge0
-${CMD} 00040 allow all from any to any via tap0
-${CMD} 00050 allow all from any to any via epair0a
-${CMD} 00060 allow all from any to any via epair1a
+#### Internals ####
+$cmd 00010 allow all from any to any via lo0
+$cmd 00020 allow all from any to any via bridge0
 
-#### Global Outbound ICMP,NTP,DNS,WHOIS,SSH,HTTP,HTTPS ####
-${CMD} 00100 allow icmp from any to any via ${PIF} keep-state
-${CMD} 00110 allow udp from any to any 123 out via ${PIF} keep-state
-${CMD} 00120 allow tcp from any to ${DNS} 53 out via ${PIF} keep-state
-${CMD} 00130 allow udp from any to ${DNS} 53 out via ${PIF} keep-state
-${CMD} 00140 allow tcp from any to any 43 out via ${PIF} keep-state
-${CMD} 00150 allow tcp from any to any 22 out via ${PIF} keep-state
-${CMD} 00160 allow tcp from any to any 80 out via ${PIF} keep-state
-${CMD} 00170 allow tcp from any to any 443 out via ${PIF} keep-state
+#### Outbounds ####
+$cmd 00100 allow icmp from me to any via $pif keep-state
+$cmd 00110 allow udp from me to any 123 out via $pif keep-state
+$cmd 00120 allow tcp from me to $dns 53 out via $pif setup keep-state
+$cmd 00130 allow udp from me to $dns 53 out via $pif keep-state
+$cmd 00140 allow tcp from me to any 43 out via $pif setup keep-state
+$cmd 00150 allow tcp from me to any 22 out via $pif setup keep-state
+$cmd 00160 allow tcp from me to any 80 out via $pif setup keep-state
+$cmd 00170 allow tcp from me to any 443 out via $pif setup keep-state
+
+#### Inbounds ####
+$cmd 00200 allow icmp from $local to me in via $pif keep-state
 
 #### FreeNAS ####
-${CMD} 00200 allow tcp from ${LOCAL} to ${FREENAS} 22 in via ${PIF} keep-state
-${CMD} 00210 allow tcp from ${LOCAL} to ${FREENAS} 80 in via ${PIF} keep-state
-${CMD} 00220 allow tcp from ${LOCAL} to ${FREENAS} 443 in via ${PIF} keep-state
-${CMD} 00230 allow tcp from ${LOCAL} to ${FREENAS} 139 in via ${PIF} keep-state
-${CMD} 00250 allow tcp from ${LOCAL} to ${FREENAS} 445 in via ${PIF} keep-state
-${CMD} 00260 allow tcp from ${LOCAL} to ${FREENAS} 5901-5910 in via ${PIF} keep-state
-${CMD} 00270 allow tcp from ${FREENAS} to any 25 out via ${PIF} keep-state
-${CMD} 00280 allow tcp from ${FREENAS} to any 110 out via ${PIF} keep-state
+$cmd 00200 allow tcp from $local to $freenas 22 in via $pif setup keep-state
+$cmd 00210 allow tcp from $local to $freenas 80 in via $pif setup keep-state
+$cmd 00220 allow tcp from $local to $freenas 443 in via $pif setup keep-state
+$cmd 00230 allow tcp from $local to $freenas 139 in via $pif setup keep-state
+$cmd 00250 allow tcp from $local to $freenas 445 in via $pif setup keep-state
+$cmd 00260 allow tcp from $local to $freenas 5901-5910 in via $pif keep-state
+$cmd 00270 allow tcp from $freenas to any 25 out via $pif setup keep-state
+$cmd 00280 allow tcp from $freenas to any 110 out via $pif setup keep-state
 
-#### UniFi Controller ####
-${CMD} 00300 allow udp from ${LOCAL} to ${UNIFI} 3478 in via ${PIF} keep-state
-${CMD} 00310 allow tcp from ${LOCAL} to ${UNIFI} 8080 in via ${PIF} keep-state
-${CMD} 00320 allow tcp from ${LOCAL} to ${UNIFI} 8443 in via ${PIF} keep-state
-${CMD} 00330 allow udp from ${LOCAL} to ${UNIFI} 10001 in via ${PIF} keep-state
-
-${CMD} 00340 allow tcp from ${UNIFI} 8080 to ${LOCAL} out via ${PIF} keep-state
+#### UniFi ####
+$cmd 00300 allow udp from $local to $unifi 3478 in via $pif keep-state
+$cmd 00310 allow tcp from $local to $unifi 8080 in via $pif setup keep-state
+$cmd 00320 allow tcp from $local to $unifi 8443 in via $pif setup keep-state
+$cmd 00330 allow udp from $local to $unifi 10001 in via $pif keep-state
+$cmd 00340 allow tcp from $unifi 8080 to $local out via $pif setup keep-state
 
 #### Nextcloud ####
-#${CMD} 00400 allow tcp
+$cmd 00400 allow tcp from any to $nextcloud 443 in via $pif setup keep-state
 
 #### Transmission ####
-#${CMD} 00500 allow all from any to any via ${VPN}
-#${CMD} 00510 allow all from ${TRANSMISSION} to ${LOCAL} via ${PIF}
-#${CMD} 00520 allow all from ${LOCAL} to ${TRANSMISSION} via ${PIF}
-#${CMD} 00530 deny all from any to any uid transmission
+# uses its own jail firewall
+
+#### OpenVPN ####
+# uses its own jail firewall
 
 #### Emby ####
-${CMD} 00600 allow tcp from ${LOCAL} to ${EMBY} 8096 in via ${PIF} keep-state
-${CMD} 00610 allow tcp from ${LOCAL} to ${EMBY} 80 in via ${PIF} keep-state
+$cmd 00600 allow tcp from $local to $emby 8096 in via $pif setup keep-state
 
 #### Airsonic ####
-${CMD} 00700 allow tcp from ${LOCAL} to ${AIRSONIC} 8080 in via ${PIF} keep-state
+$cmd 00700 allow tcp from $local to $airsonic 8080 in via $pif setup keep-state
 
 #### Default Deny ####
-${CMD} 65534 deny log all from any to any
+$cmd 65534 deny log all from any to any

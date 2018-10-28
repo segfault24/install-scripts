@@ -1,8 +1,10 @@
 #!/bin/bash
+source ../common/utils.sh
+
 JAIL=
 FQDN=
 INTERFACE=bridge0
-IP=192.168.1.30
+IP=
 MASK=24
 GATEWAY=192.168.1.1
 VNET=off

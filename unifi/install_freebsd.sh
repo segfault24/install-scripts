@@ -4,7 +4,7 @@ source ../common/utils.sh
 JAIL=unifi
 FQDN=unifi.lan
 INTERFACE=bridge0
-IP=192.168.1.32
+IP=
 MASK=24
 GATEWAY=192.168.1.1
 VNET=off

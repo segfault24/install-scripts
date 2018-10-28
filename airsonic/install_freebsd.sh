@@ -4,7 +4,7 @@ source ../common/utils.sh
 JAIL=airsonic
 FQDN=airsonic.lan
 INTERFACE=bridge0
-IP=192.168.1.27
+IP=
 MASK=24
 GATEWAY=192.168.1.1
 VNET=off
