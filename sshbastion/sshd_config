@@ -1,0 +1,24 @@
+Port 22
+AddressFamily inet
+ListenAddress SERVERIP
+Protocol 2
+
+SyslogFacility AUTH
+LogLevel INFO
+
+LoginGraceTime 2m
+PermitRootLogin no
+StrictModes yes
+MaxAuthTries 6
+MaxSessions 10
+
+PubkeyAuthentication yes
+PasswordAuthentication yes
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+
+AllowAgentForwarding no
+AllowTcpForwarding no
+X11Forwarding no
+
+PrintMotd no

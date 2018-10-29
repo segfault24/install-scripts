@@ -1,0 +1,28 @@
+#!/bin/sh
+
+pif=epair0b
+dns=192.168.0.0/16
+
+# Flush the current ruleset
+ipfw -q -f flush
+cmd="ipfw -q add"
+
+$cmd 00001 check-state
+$cmd 00002 deny ip6 from any to any
+
+#### Internals ####
+$cmd 00010 allow all from any to any via lo0
+
+#### Outbounds ####
+$cmd 00100 allow icmp from me to 192.168.0.0/16 out via $pif keep-state
+$cmd 00110 allow udp from me to any 123 out via $pif keep-state
+$cmd 00120 allow tcp from me to $dns 53 out via $pif setup keep-state
+$cmd 00130 allow udp from me to $dns 53 out via $pif keep-state
+$cmd 00140 allow tcp from me to 192.168.0.0/16 22 via $pif setup keep-state
+
+#### Inbounds ####
+$cmd 00200 allow icmp from 192.168.0.0/16 to me in via $pif keep-state
+$cmd 00210 allow tcp from any to me 22 in via $pif setup keep-state
+
+#### Default Deny ####
+$cmd 65534 deny log all from any to any
