@@ -4,9 +4,9 @@ source ../common/utils.sh
 JAIL=bastion
 FQDN=bastion.lan
 INTERFACE=vnet0
-IP=
+IP=192.168.6.27
 MASK=24
-GATEWAY=192.168.1.1
+GATEWAY=192.168.6.1
 VNET=on
 
 BASTIONUSER=remoteuser
@@ -61,7 +61,7 @@ install -m 644 -o root -g wheel sshd_config.tmp ${JAILROOT}/etc/ssh/sshd_config
 rm sshd_config.tmp
 
 # add user
-iocage exec ${JAIL} pw useradd ${BASTIONUSER} -m -s /bin/bash -w random
+iocage exec ${JAIL} pw useradd ${BASTIONUSER} -m -s /usr/local/bin/bash -w random
 
 # configure ipfw
 install -m 750 -o root -g wheel ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
