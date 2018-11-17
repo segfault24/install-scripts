@@ -9,8 +9,11 @@ MASK=24
 GATEWAY=192.168.1.1
 VNET=on
 
+BASTIONUSER=remoteuser
+
 require_root
 check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
+check_blank BASTIONUSER
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -29,8 +32,7 @@ iocage create \
     vnet="${VNET}" \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
-    boot="off" \
-    allow_tun="1"
+    boot="off"
 if [[ $? -ne 0 ]]; then
     echo "Failed to create jail ${JAIL}"
     exit 1
@@ -59,7 +61,7 @@ install -m 644 -o root -g wheel sshd_config.tmp ${JAILROOT}/etc/ssh/sshd_config
 rm sshd_config.tmp
 
 # add user
-iocage exec ${JAIL} adduser
+iocage exec ${JAIL} pw useradd ${BASTIONUSER} -m -s /bin/bash -w random
 
 # configure ipfw
 install -m 750 -o root -g wheel ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
