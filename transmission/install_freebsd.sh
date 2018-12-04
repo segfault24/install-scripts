@@ -6,7 +6,7 @@ FQDN=transmission.lan
 INTERFACE=vnet0
 IP=
 MASK=24
-GATEWAY=192.168.1.1
+GATEWAY=
 VNET=on
 
 # dataset location
@@ -63,6 +63,7 @@ iocage exec ${JAIL} sysrc inet6_enable="NO"
 iocage exec ${JAIL} sysrc ip6addrctl_enable="NO"
 iocage exec ${JAIL} sysrc transmission_enable="YES"
 iocage exec ${JAIL} sysrc transmission_download_dir="${DATADIR}"
+#iocage exec ${JAIL} sysrc transmission_flags="--logfile /var/log/transmission/transmission.log"
 iocage exec ${JAIL} sysrc openvpn_enable="YES"
 iocage exec ${JAIL} sysrc openvpn_configfile="${OPENVPN}/openvpn.conf"
 iocage exec ${JAIL} sysrc openvpn_if="tun"
@@ -79,15 +80,16 @@ iocage exec ${JAIL} service transmission stop
 # configure transmission
 JAILROOT=/mnt/iocage/jails/${JAIL}/root
 cp settings.json settings.json.tmp
-sed -i '' "s/BINDADDRESS/${IP}/g" settings.json.tmp
 TEMP=$(echo ${DATADIR} | sed "s/\//\\\\\//g")
 sed -i '' "s/DATADIR/${TEMP}/g" settings.json.tmp
+sed -i '' "s/RPCBINDADDRESS/${IP}/g" settings.json.tmp
 sed -i '' "s/RPCPASSWORD/${RPCPASS}/g" settings.json.tmp
 sed -i '' "s/RPCHOSTWL/${FQDN}/g" settings.json.tmp
 sed -i '' "s/WHITELIST/${WHITELIST}/g" settings.json.tmp
 install -m 644 settings.json.tmp ${JAILROOT}/${TRANSMISSION}/settings.json
 iocage exec ${JAIL} chown transmission:transmission ${TRANSMISSION}/settings.json
 rm settings.json.tmp
+iocage exec ${JAIL} "install -d -m 750 -o transmission -g transmission /var/log/transmission/"
 
 # configure openvpn
 iocage exec ${JAIL} mkdir -p ${OPENVPN}/pia
@@ -107,15 +109,12 @@ iocage exec ${JAIL} chmod 400 ${OPENVPN}/pass.txt
 iocage exec ${JAIL} chmod 400 ${OPENVPN}/openvpn.conf
 
 # configure ipfw
-install -m 750 -o root -g wheel ../common/ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
-
-# copy helper script
-install -m 750 -o root -g wheel test_vpn.sh ${JAILROOT}/root
+install -m 750 -o root -g wheel ipfw.rules ${JAILROOT}/${IPFWSCRIPT}
 
 # start up services
-#iocage exec ${JAIL} service openvpn start
-#iocage exec ${JAIL} service transmission start
-#iocage exec ${JAIL} service ipfw start
+iocage exec ${JAIL} service ipfw start
+iocage exec ${JAIL} service openvpn start
+iocage exec ${JAIL} service transmission start
 
 # set the rpc password
 echo rpcpassword=${RPCPASS} > ${JAILROOT}/root/transmission.password
@@ -132,5 +131,4 @@ echo \!\!\!\!\!\!\!\!\!\!
 echo \!\!\!\!\!\!\!\!\!\!
 
 # restart the whole jail to restart everything
-#iocage restart ${JAIL}
-iocage stop ${JAIL}
+iocage restart ${JAIL}

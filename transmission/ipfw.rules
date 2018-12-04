@@ -21,9 +21,12 @@ $cmd 00110 allow udp from me to any 123 out via $pif keep-state
 $cmd 00120 allow tcp from me to $dns 53 out via $pif setup keep-state
 $cmd 00130 allow udp from me to $dns 53 out via $pif keep-state
 
+$cmd 00140 deny udp from me to any 1198 out via $pif uid transmission keep-state
+$cmd 00150 allow udp from me to any 1198 out via $pif keep-state
+
 #### Inbounds ####
 $cmd 00200 allow icmp from 192.168.0.0/16 to me in via $pif keep-state
 $cmd 00210 allow tcp from 192.168.0.0/16 to me 9091 in via $pif setup keep-state
 
 #### Default Deny ####
-$cmd 65534 deny log all from any to any
+$cmd 65534 deny all from any to any
