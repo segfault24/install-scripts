@@ -20,6 +20,9 @@ $cmd 00120 allow tcp from me to $dns 53 out via $pif setup keep-state
 $cmd 00130 allow udp from me to $dns 53 out via $pif keep-state
 $cmd 00140 allow tcp from me to 192.168.0.0/16 22 via $pif setup keep-state
 
+#### SSHGuard ####
+$cmd 00199 deny ip from table\(22\) to any
+
 #### Inbounds ####
 $cmd 00200 allow icmp from 192.168.0.0/16 to me in via $pif keep-state
 $cmd 00210 allow tcp from any to me 22 in via $pif setup keep-state
