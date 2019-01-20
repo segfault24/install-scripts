@@ -1,20 +1,24 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=emby
-FQDN=emby.lan
-INTERFACE=bridge0
-IP=
-MASK=24
-GATEWAY=192.168.1.1
-VNET=off
-
-DATASET=/mnt/mypool/media
-DATADIR=/mnt/media
+PROP="emby.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
-check_blank DATASET DATADIR
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+check_blank2 $PROP mount_src mount_dst mount_mode
+
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
+
+DATASET=$(prop $PROP mount_src)
+DATADIR=$(prop $PROP mount_dst)
+DATAMODE=$(prop $PROP mount_mode)
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -45,7 +49,7 @@ init_ports
 make_port multimedia/emby-server
 
 # map storage
-iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ro 0 0
+iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ${DATAMODE} 0 0
 
 # set to start on boot
 iocage exec ${JAIL} sysrc emby_server_enable="YES"

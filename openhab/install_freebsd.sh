@@ -1,7 +1,7 @@
 #!/bin/bash
 source ../common/utils.sh
 
-PROP="unifi.properties"
+PROP="openhab.properties"
 
 require_root
 require_file $PROP
@@ -15,12 +15,14 @@ MASK=$(prop $PROP jail_mask)
 GATEWAY=$(prop $PROP jail_gateway)
 VNET=$(prop $PROP jail_vnet)
 
+PASS=$(gen_passwd)
+
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","llvm40","openjdk8","snappyjava","mongodb34"
+        "nano","bash","openhab2"
     ]
 }
 __EOF__
@@ -39,14 +41,8 @@ if [[ $? -ne 0 ]]; then
 fi
 rm /tmp/pkg.json
 
-# build the rest from ports
-init_ports
-make_port ports-mgmt/portmaster
-make_port net-mgmt/unifi5
-
 # set to start on boot
-iocage exec ${JAIL} sysrc unifi_enable="YES"
+iocage exec ${JAIL} sysrc openhab2_enable="YES"
 
-# restart the whole jail to restart everything
-iocage restart ${JAIL}
-
+# start up service
+iocage exec ${JAIL} service openhab2 start

@@ -1,0 +1,7 @@
+jail_name=unifi-test
+jail_fqdn=unifi-test.lan
+jail_interface=bridge0
+jail_ip=192.168.6.68
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=off

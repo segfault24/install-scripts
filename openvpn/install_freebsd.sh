@@ -1,21 +1,24 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=openvpn
-FQDN=openvpn.lan
-INTERFACE=vnet0
-IP=
-MASK=24
-GATEWAY=192.168.1.1
-VNET=on
-
-CLIENTNET=192.168.2.0
-CLIENTMASK=255.255.255.0
-CLIENTDNS=192.168.1.1
+PROP="openvpn.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
-check_blank CLIENTNET CLIENTMASK CLIENTDNS
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+check_blank2 $PROP vpn_client_net vpn_client_mask vpn_client_dns
+
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
+
+CLIENTNET=$(prop $PROP vpn_client_net)
+CLIENTMASK=$(prop $PROP vpn_client_mask)
+CLIENTDNS=$(prop $PROP vpn_client_dns)
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...
@@ -41,9 +44,6 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 rm /tmp/pkg.json
-
-# build the rest from ports
-#init_ports
 
 JAILROOT=/mnt/iocage/jails/${JAIL}/root
 OPENVPN=/usr/local/etc/openvpn

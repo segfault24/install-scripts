@@ -1,28 +1,31 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=transmission
-FQDN=transmission.lan
-INTERFACE=vnet0
-IP=
-MASK=24
-GATEWAY=
-VNET=on
-
-# dataset location
-DATASET=/mnt/mypool/media/New
-# mount point within jail
-DATADIR=/mnt/downloads
-# whitelist for client access
-WHITELIST='127.0.0.1,192.168.\*.\*'
-
-# pia vpn credentials
-VPNUSER=
-VPNPASS=
+PROP="transmission.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
-check_blank DATASET DATADIR WHITELIST VPNUSER VPNPASS
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+check_blank2 $PROP mount_src mount_dst mount_mode web_whitelist vpn_user vpn_pass
+
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
+
+DATASET=$(prop $PROP mount_src)
+DATADIR=$(prop $PROP mount_dst)
+DATAMODE=$(prop $PROP mount_mode)
+
+# web interface whitelist
+WHITELIST=$(prop $PROP web_whitelist)
+
+# pia vpn credentials
+VPNUSER=$(prop $PROP vpn_user)
+VPNPASS=$(prop $PROP vpn_pass)
 
 RPCPASS=$(gen_passwd)
 
@@ -71,7 +74,7 @@ iocage exec ${JAIL} sysrc firewall_enable="YES"
 iocage exec ${JAIL} sysrc firewall_script="${IPFWSCRIPT}"
 
 # map storage
-iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs rw 0 0
+iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ${DATAMODE} 0 0
 
 # start/stop to generate certain directories, files, etc
 iocage exec ${JAIL} service transmission start

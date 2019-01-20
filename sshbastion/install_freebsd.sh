@@ -1,19 +1,22 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=bastion
-FQDN=bastion.lan
-INTERFACE=vnet0
-IP=192.168.6.27
-MASK=24
-GATEWAY=192.168.6.1
-VNET=on
-
-BASTIONUSER=remoteuser
+PROP="sshbastion.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
-check_blank BASTIONUSER
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+check_blank2 $PROP bastion_user
+
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
+
+BASTIONUSER=$(prop $PROP bastion_user)
 
 # create the jail with base applications
 echo Creating jail "${JAIL}" at ${IP}/${MASK}...

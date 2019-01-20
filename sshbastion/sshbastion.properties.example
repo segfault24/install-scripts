@@ -1,0 +1,9 @@
+jail_name=bastion-test
+jail_fqdn=bastion-test.lan
+jail_interface=vnet0
+jail_ip=192.168.6.66
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=on
+
+bastion_user=remoteuser

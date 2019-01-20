@@ -1,50 +1,36 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=airsonic
-FQDN=airsonic.lan
-INTERFACE=bridge0
-IP=
-MASK=24
-GATEWAY=192.168.1.1
-VNET=off
-
-DATASET=/mnt/mypool/media/Music
-DATADIR=/mnt/music
+PROP="airsonic.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET DATASET DATADIR
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+check_blank2 $PROP mount_src mount_dst mount_mode
+
+JAIL_VERSION=11.2-RELEASE
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
+
+DATASET=$(prop $PROP mount_src)
+DATADIR=$(prop $PROP mount_dst)
+DATAMODE=$(prop $PROP mount_mode)
 
 PASS=$(gen_passwd)
 
-# create the jail with base applications
-echo Creating jail "${JAIL}" at ${IP}/${MASK}...
-cat <<__EOF__ >/tmp/pkg.json
-{
-    "pkgs":[
-        "nano","bash","wget","ca_root_nss","tomcat8",
-        "nasm","binutils","texi2html","frei0r","gmake","pkgconf",
-        "perl5-5.26.2","gnutls","freetype2","fontconfig","gmp","ninja",
-        "cmake","automake","autoconf","libtool","libiconv","xorg-macros"
-    ]
-}
-__EOF__
-iocage create \
-    --name "${JAIL}" \
-    -r 11.2-RELEASE \
-    -p /tmp/pkg.json \
-    host_hostname="${JAIL}" \
-    vnet="${VNET}" \
-    ip4_addr="${INTERFACE}|${IP}/${MASK}" \
-    defaultrouter="${GATEWAY}" \
-    boot="on"
-if [[ $? -ne 0 ]]; then
-    echo "Failed to create jail ${JAIL}"
-    exit 1
-fi
-rm /tmp/pkg.json
+# create the jail & install packages
+create_jail ${JAIL_VERSION} ${JAIL} ${INTERFACE} ${IP} ${MASK} ${GATEWAY} ${VNET}
+install_pkg "tomcat8"
 
-# build the rest from ports
+# ffmpeg build & run dependencies
+install_pkg "nasm binutils frei0r gmake pkgconf libiconv perl5 fontconfig freetype2 gmp gnutls"
+install_pkg "libxcb opus libtheora libvorbis libvpx"
+#sub dep?: texi2html cmake automake autoconf libtool xorg-macros
 init_ports
 config_port multimedia/ffmpeg
 make_port multimedia/ffmpeg
@@ -77,7 +63,7 @@ iocage exec ${JAIL} wget ${WAR_URL} -O ${TOMCAT}/webapps/airsonic.war
 iocage exec ${JAIL} chown www:www ${TOMCAT}/webapps/airsonic.war
 
 # map storage
-iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ro 0 0
+iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ${DATAMODE} 0 0
 
 # save admin password
 echo username=admin > ${JAILROOT}/root/tomcat.password

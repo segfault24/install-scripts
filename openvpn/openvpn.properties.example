@@ -1,0 +1,11 @@
+jail_name=openvpn-test
+jail_fqdn=openvpn-test.lan
+jail_interface=vnet0
+jail_ip=192.168.6.65
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=on
+
+vpn_client_net=192.168.2.0
+vpn_client_mask=255.255.255.0
+vpn_client_dns=192.168.6.1

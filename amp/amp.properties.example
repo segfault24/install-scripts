@@ -1,0 +1,7 @@
+jail_name=amp-test
+jail_fqdn=amp-test.lan
+jail_interface=bridge0
+jail_ip=192.168.6.62
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=off

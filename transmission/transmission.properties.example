@@ -1,0 +1,16 @@
+jail_name=transmission-test
+jail_fqdn=transmission-test.lan
+jail_interface=vnet0
+jail_ip=192.168.6.67
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=on
+
+mount_src=/mnt/mypool/media/New
+mount_dst=/mnt/downloads
+mount_mode=rw
+
+web_whitelist=127.0.0.1,192.168.6.*
+
+vpn_user=
+vpn_pass=

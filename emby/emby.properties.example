@@ -1,0 +1,11 @@
+jail_name=emby-test
+jail_fqdn=emby-test.lan
+jail_interface=bridge0
+jail_ip=192.168.6.63
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=off
+
+mount_src=/mnt/mypool/media
+mount_dst=/mnt/media
+mount_mode=ro

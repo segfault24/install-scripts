@@ -1,16 +1,19 @@
 #!/bin/bash
 source ../common/utils.sh
 
-JAIL=
-FQDN=
-INTERFACE=bridge0
-IP=
-MASK=24
-GATEWAY=192.168.1.1
-VNET=off
+PROP="amp.properties"
 
 require_root
-check_blank JAIL FQDN INTERFACE IP MASK GATEWAY VNET
+require_file $PROP
+check_blank2 $PROP jail_name jail_fqdn jail_interface jail_ip jail_mask jail_gateway jail_vnet
+
+JAIL=$(prop $PROP jail_name)
+FQDN=$(prop $PROP jail_fqdn)
+INTERFACE=$(prop $PROP jail_interface)
+IP=$(prop $PROP jail_ip)
+MASK=$(prop $PROP jail_mask)
+GATEWAY=$(prop $PROP jail_gateway)
+VNET=$(prop $PROP jail_vnet)
 
 DB_ROOT_PASSWORD=$(gen_passwd)
 
@@ -41,9 +44,6 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 rm /tmp/pkg.json
-
-# build the rest from ports
-#init_ports
 
 # set to start on boot
 iocage exec ${JAIL} sysrc mysql_enable="YES"

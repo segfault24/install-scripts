@@ -1,0 +1,7 @@
+jail_name=openhab-test
+jail_fqdn=openhab-test.lan
+jail_interface=bridge0
+jail_ip=192.168.6.64
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=off
