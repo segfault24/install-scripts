@@ -1,11 +1,15 @@
 jail_name=airsonic-test
 jail_fqdn=airsonic-test.lan
-jail_interface=bridge0
+jail_interface=vnet0
 jail_ip=192.168.6.61
 jail_mask=24
 jail_gateway=192.168.6.1
-jail_vnet=off
+jail_vnet=on
 
 mount_src=/mnt/mypool/media/Music
 mount_dst=/mnt/music
 mount_mode=ro
+
+ext_ssl=selfsigned
+#options: selfsigned letsencrypt
+ext_fqdn=airsonic.mydomain.com
