@@ -1,0 +1,15 @@
+## VANILLA
+1) run ./run-server.sh
+3) run commands
+     /whitelist add <username>
+     /op <username>
+     /stop
+4) edit server.properties
+     difficulty=2
+     white-list=true
+     server-port=25565
+
+## MODDED
+1) run java -jar forge-<version>-installer.jar --installServer nogui
+2) follow steps for vanilla
+

@@ -83,7 +83,7 @@ iocage exec ${JAIL} ln -s /usr/local/bin/ffmpeg /var/airsonic/transcode/ffmpeg
 iocage exec ${JAIL} "install -m 750 -o www -g www -d /var/music"
 
 # install airsonic
-WAR_URL=https://github.com/airsonic/airsonic/releases/download/v10.2.1/airsonic.war
+WAR_URL=https://github.com/airsonic/airsonic/releases/download/v10.4.1/airsonic.war
 iocage exec ${JAIL} wget ${WAR_URL} -O ${TOMCAT}/webapps/airsonic.war
 iocage exec ${JAIL} chown www:www ${TOMCAT}/webapps/airsonic.war
 

@@ -1,0 +1,11 @@
+jail_name=minecraft-test
+jail_fqdn=minecraft-test.lan
+jail_interface=vnet0
+jail_ip=192.168.6.37
+jail_mask=24
+jail_gateway=192.168.6.1
+jail_vnet=on
+
+ext_ssl=selfsigned
+#options: selfsigned letsencrypt
+ext_fqdn=minecraft.mydomain.com
