@@ -32,7 +32,7 @@ install_pkg "tomcat8"
 
 # ffmpeg build & run dependencies
 install_pkg "nasm binutils frei0r gmake pkgconf libiconv perl5 fontconfig freetype2 gmp gnutls"
-install_pkg "libxcb opus libtheora libvorbis libvpx nginx"
+install_pkg "libxcb opus libtheora libvorbis libvpx nginx py27-certbot"
 #sub dep?: texi2html cmake automake autoconf libtool xorg-macros
 init_ports
 config_port multimedia/ffmpeg
@@ -56,19 +56,27 @@ cp nginx.conf nginx.conf.tmp
 sed -i '' "s/SERVERNAME/${EXTFQDN}/g" nginx.conf.tmp
 install -m 640 -o root -g wheel nginx.conf.tmp ${JAILROOT}/${NGINX}/nginx.conf
 rm nginx.conf.tmp
+iocage exec ${JAIL} service nginx start
 
-#if [ $EXTSSL -eq "letsencrypt" ]
-#then
-#  iocage exec ${JAIL} "pkg install -y py27-certbot"
-#  iocage exec ${JAIL}
-#else
+if [ $EXTSSL -eq "letsencrypt" ]
+then
+  # TODO automate certbot initial
+  iocage exec ${JAIL} "certbot-2.7 certonly -n --webroot -w /var/www -d ${EXTFQDN}"
+  iocage exec ${JAIL} ln -s /etc/letsencrypt/live/${EXTFQDN}/privkey.pem ${NGINX}/key.pem
+  iocage exec ${JAIL} ln -s /usr/local/etc/letsencrypt/live/${EXTFQDN}/cert.pem ${NGINX}/cert.pem
+  iocage exec ${JAIL} service nginx restart
+  # install renewal cron job
+  install -m 600 -o root -g wheel airsonic-crontab ${JAILROOT}/root/
+  iocage exec ${JAIL} crontab /root/airsonic-crontab
+  iocage exec ${JAIL} rm /root/airsonic-crontab
+else
   # generate self signed cert
   SUBJ="/C=US/ST=New\ York/L=New\ York/O=The\ Ether/CN=${EXTFQDN}"
   KEYOUT=${NGINX}/key.pem
   CRTOUT=${NGINX}/cert.pem
   iocage exec ${JAIL} "openssl req -x509 -nodes -days 1095 -newkey rsa:2048 -keyout ${KEYOUT} -out ${CRTOUT} -subj ${SUBJ}"
   iocage exec ${JAIL} chmod 400 ${KEYOUT} ${CRTOUT}
-#fi
+fi
 
 # remove default tomcat deployments
 iocage exec ${JAIL} rm -rf ${TOMCAT}/webapps/ROOT

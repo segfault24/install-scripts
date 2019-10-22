@@ -1,0 +1,1 @@
+56 15 * * * certbot-2.7 renew && service nginx restart
