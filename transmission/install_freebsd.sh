@@ -40,19 +40,21 @@ cat <<__EOF__ >/tmp/pkg.json
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.2-RELEASE \
+    -r 11.4-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
     ip4_addr="${INTERFACE}|${IP}/${MASK}" \
     defaultrouter="${GATEWAY}" \
-    boot="off" \
+    boot="on" \
     allow_tun="1"
 if [[ $? -ne 0 ]]; then
     echo "Failed to create jail ${JAIL}"
     exit 1
 fi
 rm /tmp/pkg.json
+iocage start ${JAIL}
+
 
 # build the rest from ports
 #init_ports
@@ -74,6 +76,7 @@ iocage exec ${JAIL} sysrc firewall_enable="YES"
 iocage exec ${JAIL} sysrc firewall_script="${IPFWSCRIPT}"
 
 # map storage
+iocage exec ${JAIL} mkdir -p ${DATADIR}
 iocage fstab -a ${JAIL} ${DATASET} ${DATADIR} nullfs ${DATAMODE} 0 0
 
 # start/stop to generate certain directories, files, etc
@@ -81,7 +84,7 @@ iocage exec ${JAIL} service transmission start
 iocage exec ${JAIL} service transmission stop
 
 # configure transmission
-JAILROOT=/mnt/iocage/jails/${JAIL}/root
+JAILROOT=/mnt/mypool/iocage/jails/${JAIL}/root
 cp settings.json settings.json.tmp
 TEMP=$(echo ${DATADIR} | sed "s/\//\\\\\//g")
 sed -i '' "s/DATADIR/${TEMP}/g" settings.json.tmp
@@ -89,6 +92,7 @@ sed -i '' "s/RPCBINDADDRESS/${IP}/g" settings.json.tmp
 sed -i '' "s/RPCPASSWORD/${RPCPASS}/g" settings.json.tmp
 sed -i '' "s/RPCHOSTWL/${FQDN}/g" settings.json.tmp
 sed -i '' "s/WHITELIST/${WHITELIST}/g" settings.json.tmp
+iocage exec ${JAIL} mkdir -p ${TRANSMISSION}
 install -m 644 settings.json.tmp ${JAILROOT}/${TRANSMISSION}/settings.json
 iocage exec ${JAIL} chown transmission:transmission ${TRANSMISSION}/settings.json
 rm settings.json.tmp
@@ -98,7 +102,7 @@ iocage exec ${JAIL} "install -d -m 750 -o transmission -g transmission /var/log/
 iocage exec ${JAIL} mkdir -p ${OPENVPN}/pia
 iocage exec ${JAIL} wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip -O ${OPENVPN}/openvpn.zip
 iocage exec ${JAIL} unzip ${OPENVPN}/openvpn.zip -d ${OPENVPN}/pia
-iocage exec ${JAIL} cp ${OPENVPN}/pia/US\ East.ovpn ${OPENVPN}/openvpn.conf
+iocage exec ${JAIL} cp ${OPENVPN}/pia/us_east.ovpn ${OPENVPN}/openvpn.conf
 TEMP=$(echo ${OPENVPN} | sed "s/\//\\\\\//g")
 iocage exec ${JAIL} sed -i '' "s/auth-user-pass/auth-user-pass ${TEMP}\\/pass.txt/g" ${OPENVPN}/openvpn.conf
 iocage exec ${JAIL} sed -i '' "s/ca ca.rsa.2048.crt/ca ${TEMP}\\/ca.rsa.2048.crt/g" ${OPENVPN}/openvpn.conf
