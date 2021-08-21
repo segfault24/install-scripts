@@ -20,13 +20,13 @@ echo Creating jail "${JAIL}" at ${IP}/${MASK}...
 cat <<__EOF__ >/tmp/pkg.json
 {
     "pkgs":[
-        "nano","bash","llvm40","openjdk8","snappyjava","mongodb34"
+        "nano","bash","openjdk8","snappyjava","mongodb36","llvm10"
     ]
 }
 __EOF__
 iocage create \
     --name "${JAIL}" \
-    -r 11.2-RELEASE \
+    -r 12.2-RELEASE \
     -p /tmp/pkg.json \
     host_hostname="${JAIL}" \
     vnet="${VNET}" \
@@ -41,8 +41,7 @@ rm /tmp/pkg.json
 
 # build the rest from ports
 init_ports
-make_port ports-mgmt/portmaster
-make_port net-mgmt/unifi5
+make_port net-mgmt/unifi6
 
 # set to start on boot
 iocage exec ${JAIL} sysrc unifi_enable="YES"
